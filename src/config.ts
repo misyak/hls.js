@@ -124,6 +124,11 @@ type TSDemuxerConfig = {
   forceKeyFrameOnDiscontinuity: boolean,
 };
 
+type SpectrogramConfig = {
+  numOfColors: number,
+  numOfValues: number
+};
+
 export type HlsConfig =
   {
     debug: boolean,
@@ -159,7 +164,8 @@ export type HlsConfig =
   PlaylistLoaderConfig &
   StreamControllerConfig &
   Partial<TimelineControllerConfig> &
-  TSDemuxerConfig;
+  TSDemuxerConfig &
+  SpectrogramConfig;
 
 // If possible, keep hlsDefaultConfig shallow
 // It is cloned whenever a new Hls instance is created, by keeping the config
@@ -243,7 +249,11 @@ export const hlsDefaultConfig: HlsConfig = {
   timelineController: (__USE_SUBTITLES__) ? TimelineController : void 0,
   audioStreamController: (__USE_ALT_AUDIO__) ? AudioStreamController : void 0,
   audioTrackController: (__USE_ALT_AUDIO__) ? AudioTrackController : void 0,
-  emeController: (__USE_EME_DRM__) ? EMEController : void 0
+  emeController: (__USE_EME_DRM__) ? EMEController : void 0,
+
+  // spectrogram
+  numOfColors: 128,
+  numOfValues: 30
 };
 
 function timelineConfig (): TimelineControllerConfig {

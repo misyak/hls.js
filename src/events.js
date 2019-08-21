@@ -11,6 +11,8 @@ const HlsEvents = {
   MEDIA_DETACHING: 'hlsMediaDetaching',
   // fired when MediaSource has been detached from media element - data: { }
   MEDIA_DETACHED: 'hlsMediaDetached',
+  // fired when canvas was attached - data: { canvas }
+  CANVAS_ATTACHED: 'hlsCanvasAttached',
   // fired when we buffer is going to be reset - data: { }
   BUFFER_RESET: 'hlsBufferReset',
   // fired when we know about the codecs that we need buffers for to push into - data: {tracks : { container, codec, levelCodec, initSegment, metadata }}

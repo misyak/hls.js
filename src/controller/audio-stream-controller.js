@@ -14,6 +14,9 @@ import { findFragWithCC } from '../utils/discontinuities';
 import { FragmentState } from './fragment-tracker';
 import Fragment, { ElementaryStreamTypes } from '../loader/fragment';
 import BaseStreamController, { State } from './base-stream-controller';
+import Spectrogram from '../spectrogram/spectrogram';
+import { chunkArray } from '../utils/chunkArray';
+import { normalizeValues, interpolateVectors, extractData } from '../utils/process-buffer-array';
 const { performance } = window;
 
 const TICK_INTERVAL = 100; // how often to tick in ms
@@ -23,6 +26,7 @@ class AudioStreamController extends BaseStreamController {
     super(hls,
       Event.MEDIA_ATTACHED,
       Event.MEDIA_DETACHING,
+      Event.CANVAS_ATTACHED,
       Event.AUDIO_TRACKS_UPDATED,
       Event.AUDIO_TRACK_SWITCHING,
       Event.AUDIO_TRACK_LOADED,
@@ -44,6 +48,8 @@ class AudioStreamController extends BaseStreamController {
     this.initPTS = [];
     this.waitingFragment = null;
     this.videoTrackCC = null;
+    this.processedData = [];
+    this.spectrogram = null;
   }
 
   // Signal that video PTS was found
@@ -366,6 +372,11 @@ class AudioStreamController extends BaseStreamController {
     }
   }
 
+  onCanvasAttached (data) {
+    this.canvas = data.canvas;
+    this.spectrogram = new Spectrogram(this.canvas);
+  }
+
   onMediaDetaching () {
     let media = this.media;
     if (media && media.ended) {
@@ -591,6 +602,27 @@ class AudioStreamController extends BaseStreamController {
       if (!Number.isFinite(data.endPTS)) {
         data.endPTS = data.startPTS + fragCurrent.duration;
         data.endDTS = data.startDTS + fragCurrent.duration;
+      }
+
+      if (data.data1) {
+        // DATA PROCESSING AND DRAWING
+        const dataChunks = chunkArray(data.data1, 8);
+        const fragmentLength = fragCurrent.duration * 1000;
+
+        // values for normalization to be able draw it
+        const valuesRequired = this.config.numOfValues;
+        const colorsRequired = this.config.numOfColors;
+
+        // to have smooth data feel in canvas
+        // delay of one vector is 30ms
+        const filledPixelsInCanvas = fragmentLength / 30;
+        const step = Math.floor(dataChunks.length / filledPixelsInCanvas);
+
+        const extractedData = extractData(dataChunks, step);
+        const interpolatedData = interpolateVectors(extractedData, valuesRequired);
+        const processedData = normalizeValues(interpolatedData, colorsRequired);
+
+        this.spectrogram.drawSpectrogram(processedData, fragmentLength);
       }
 
       fragCurrent.addElementaryStream(ElementaryStreamTypes.AUDIO);

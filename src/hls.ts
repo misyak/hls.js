@@ -42,6 +42,7 @@ export default class Hls extends Observer {
   private emeController: any;
   private coreComponents: any[];
   private media: HTMLMediaElement | null = null;
+  private canvas: HTMLCanvasElement | null = null;
   private url: string | null = null;
 
   /**
@@ -265,6 +266,15 @@ export default class Hls extends Observer {
     logger.log('attachMedia');
     this.media = media;
     this.trigger(HlsEvents.MEDIA_ATTACHING, { media: media });
+  }
+
+  /**
+   * Attach a canvas element
+   * @param {HTMLCanvasElement} canvas
+   */
+  attachCanvas (canvas: HTMLCanvasElement) {
+    this.canvas = canvas;
+    this.trigger(HlsEvents.CANVAS_ATTACHED, { canvas: canvas });
   }
 
   /**
