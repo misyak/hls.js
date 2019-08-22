@@ -801,10 +801,8 @@ module.exports = lerp
 
       const step = 30;
       this._isDrawing = true;
-      console.log('DATA LENGTH IN DRAW ',data.length);
       for (let i=0; i < data.length; i++) {
         setTimeout(()=>{
-          (i % 100 === 0 ) ? console.log('DRAW I ', i) : null;
           this.draw(data[i], baseCanvasCtx);
         }, i * step);
       }
