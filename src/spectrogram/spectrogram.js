@@ -1,5 +1,5 @@
 const spectrogram = require('spectrogram');
-const colormap = require('colormap');
+const colormap = require('../colormap/colormap');
 
 export default class Spectrogram {
   spectro;
