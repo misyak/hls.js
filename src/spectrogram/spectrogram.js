@@ -7,6 +7,7 @@ export default class Spectrogram {
   constructor (canvas) {
     this.drawSpectrogram = this.drawSpectrogram.bind(this);
     this.initSpectrogram = this.initSpectrogram.bind(this);
+    this.setEmergencyFlag = this.setEmergencyFlag.bind(this);
 
     this.initSpectrogram(canvas);
   }
@@ -31,5 +32,9 @@ export default class Spectrogram {
 
   drawSpectrogram (data) {
     this.spectro.createCanvas(data);
+  }
+
+  setEmergencyFlag () {
+    this.spectro.setEmergencyFlag();
   }
 }

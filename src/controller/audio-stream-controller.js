@@ -40,7 +40,9 @@ class AudioStreamController extends BaseStreamController {
       Event.BUFFER_CREATED,
       Event.BUFFER_APPENDED,
       Event.BUFFER_FLUSHED,
-      Event.INIT_PTS_FOUND);
+      Event.INIT_PTS_FOUND,
+      Event.EMERGENCY_EVENT
+    );
     this.fragmentTracker = fragmentTracker;
     this.config = hls.config;
     this.audioCodecSwap = false;
@@ -375,6 +377,10 @@ class AudioStreamController extends BaseStreamController {
   onCanvasAttached (data) {
     this.canvas = data.canvas;
     this.spectrogram = new Spectrogram(this.canvas);
+  }
+
+  onEmergencyEvent () {
+    this.spectrogram.setEmergencyFlag();
   }
 
   onMediaDetaching () {

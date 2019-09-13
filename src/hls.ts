@@ -278,6 +278,13 @@ export default class Hls extends Observer {
   }
 
   /**
+   * EventOccurred
+   */
+  emergencyEvent () {
+    this.trigger(HlsEvents.EMERGENCY_EVENT);
+  }
+
+  /**
    * Detach from the media
    */
   detachMedia () {
