@@ -109,6 +109,8 @@ return /******/ (function(modules) { // webpackBootstrap
   'use strict';
 
   var BACKGROUND_COLOR = "#210d3e";
+  var TIME_STEP = 30;
+  var EED_WINDOW = 50;
 
   function _isFunction(v) {
     return typeof v === 'function';
@@ -129,6 +131,7 @@ return /******/ (function(modules) { // webpackBootstrap
     this._fragmentsQueue = [];
     this._isDrawing = false;
     this._emergencyOccurred = false;
+    this._newFragmentReceived = false;
     this._audioEnded = null;
     this._paused = null;
     this._pausedAt = null;
@@ -179,35 +182,41 @@ return /******/ (function(modules) { // webpackBootstrap
     this._emergencyOccurred = false;
   };
 
+  Spectrogram.prototype.setFragmentFlag = function () {
+    this._newFragmentReceived = true;
+  };
+
+  Spectrogram.prototype.resetFragmentFlag = function () {
+    this._newFragmentReceived = false;
+  };
+
   Spectrogram.prototype.drawSpectrogram = function (data, baseCanvasCtx) {
     var _this = this;
 
     return new Promise(function (resolve) {
-      var step = 30;
-      var EED_window = 33;
       _this._isDrawing = true;
       var eedEnd = 0;
 
       var _loop = function _loop(i) {
         setTimeout(function () {
+          // emergnecy event occured
           if (_this._emergencyOccurred) {
-            eedEnd = i + EED_window;
+            eedEnd = i + EED_WINDOW;
 
             _this.draw(data[i], baseCanvasCtx, 'line');
 
-            _this.resetEmergencyFlag();
-          }
+            _this.resetEmergencyFlag(); // drawing top and bottom border
 
-          if (eedEnd > 0 && i < eedEnd) {
-            _this.draw(data[i], baseCanvasCtx, 'border');
-          }
+          } else if (eedEnd > 0 && i < eedEnd) {
+            _this.draw(data[i], baseCanvasCtx, 'border'); // end of emergency event
 
-          if (eedEnd > 0 && i === eedEnd) {
-            _this.draw(data[i], baseCanvasCtx, 'line');
-          }
+          } else if (eedEnd > 0 && i === eedEnd) {
+            _this.draw(data[i], baseCanvasCtx, 'line'); // no EE just draw as normally
 
-          _this.draw(data[i], baseCanvasCtx);
-        }, i * step);
+          } else {
+            _this.draw(data[i], baseCanvasCtx);
+          }
+        }, i * TIME_STEP);
       };
 
       for (var i = 0; i < data.length; i++) {
@@ -217,7 +226,47 @@ return /******/ (function(modules) { // webpackBootstrap
       setTimeout(function () {
         _this._isDrawing = false;
         resolve(baseCanvasCtx);
-      }, data.length * step);
+      }, data.length * TIME_STEP);
+    });
+  };
+
+  Spectrogram.prototype.blackOutCanvas = function (baseCanvasCtx) {
+    var _this2 = this;
+
+    return new Promise(function (resolve) {
+      var baseCanvas = baseCanvasCtx.canvas;
+      var baseWidth = baseCanvas.width;
+      var baseHeight = baseCanvas.height;
+      baseCanvasCtx.fillStyle = 'black';
+      var i = 0;
+      _this2._isDrawing = true;
+
+      do {
+        setTimeout(function () {
+          var tempCanvasContext = baseCanvasCtx._tempContext;
+          var tempCanvas = tempCanvasContext.canvas;
+          tempCanvasContext.drawImage(baseCanvas, 0, 0, baseWidth, baseHeight);
+          baseCanvasCtx.fillRect(baseWidth - 1, 0, 1, baseHeight);
+          baseCanvasCtx.translate(-1, 0); // draw prev canvas before translation
+
+          baseCanvasCtx.drawImage(tempCanvas, 0, 0, baseWidth, baseHeight, 0, 0, baseWidth, baseHeight); // reset transformation matrix
+
+          baseCanvasCtx.setTransform(1, 0, 0, 1, 0, 0);
+
+          _this2._baseCanvasContext.drawImage(baseCanvas, 0, 0, baseWidth, baseHeight);
+        }, i * TIME_STEP);
+        i++;
+
+        if (i === baseWidth - 1) {
+          _this2._isDrawing = false;
+        }
+      } while (!_this2._newFragmentReceived && i < baseWidth);
+
+      if (_this2._newFragmentReceived) {
+        _this2._isDrawing = false;
+
+        _this2.processQueue(baseCanvasCtx);
+      }
     });
   };
 
@@ -234,7 +283,7 @@ return /******/ (function(modules) { // webpackBootstrap
     tempCanvasContext.drawImage(baseCanvas, 0, 0, baseWidth, baseHeight);
 
     for (var i = 0; i < array.length; i++) {
-      var value = array[i];
+      var value = array[i]; // marking the part where something occured
 
       if (shape === 'line') {
         baseCanvasCtx.fillStyle = 'yellow';
@@ -261,7 +310,7 @@ return /******/ (function(modules) { // webpackBootstrap
   };
 
   Spectrogram.prototype.createCanvas = function (data) {
-    var _this2 = this;
+    var _this3 = this;
 
     var baseCanvas = document.createElement('canvas');
     baseCanvas.width = this._baseCanvas.width;
@@ -274,22 +323,27 @@ return /******/ (function(modules) { // webpackBootstrap
 
     if (!this._isDrawing) {
       this.drawSpectrogram(data, baseCanvasContext).then(function () {
-        _this2.processQueue(baseCanvasContext);
+        _this3.processQueue(baseCanvasContext);
       });
     } else {
       this._fragmentsQueue.push(data);
+
+      this.setFragmentFlag();
     }
   };
 
   Spectrogram.prototype.processQueue = function (baseCanvasCtx) {
-    var _this3 = this;
+    var _this4 = this;
 
     if (this._fragmentsQueue.length > 0 && !this._isDrawing) {
       var dataToDraw = this._fragmentsQueue.shift();
 
       this.drawSpectrogram(dataToDraw, baseCanvasCtx).then(function () {
-        _this3.processQueue(baseCanvasCtx);
+        _this4.processQueue(baseCanvasCtx);
       });
+    } else {
+      this.resetFragmentFlag();
+      this.blackOutCanvas(baseCanvasCtx);
     }
   };
 
