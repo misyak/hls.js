@@ -575,7 +575,7 @@ module.exports = lerp
           } else if (eedEnd > 0 && i < eedEnd) {
             this.draw(data[i], baseCanvasCtx, 'border')
             // end of emergency event
-          } else if (eedEnd > 0 && (i === eedEnd || i === data.length)) {
+          } else if (eedEnd > 0 && (i === eedEnd || i === data.length - 1)) {
             this.draw(data[i], baseCanvasCtx, 'line')
             // no EE just draw as normally
           } else {
